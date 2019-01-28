@@ -1,0 +1,54 @@
+---
+# tasks file for swygue.trello
+- name: get trello-desktop effective url
+  command: "curl -Ls -o /dev/null -w %{url_effective} {{ trello_desktop_url }}/latest"
+  register: url
+  changed_when: "url.rc != 0"
+
+- name: get trello-desktop latest version tag
+  shell: export URL="{{ url.stdout }}"; VER=${URL##*/}; echo $VER
+  register: trello_ver
+  changed_when: "trello_ver.rc != 0"
+
+- name: extract tello-desktop version number from version tag
+  shell: echo "{{ trello_ver.stdout }}"| cut -c 2-
+  register: trello_ver_number
+  changed_when: "trello_ver_number.rc != 0"
+
+- name: check if trello-desktop is installed
+  stat:
+    path: "{{ trello_desktop_install_dir }}/trello-desktop/{{ trello_ver_number.stdout }}"
+  register: is_installed
+
+- name: create trello-desktop install dir "{{ trello_desktop_install_dir }}/trello-desktop/tags/{{ trello_ver_number.stdout }}"
+  file:
+    path: "{{ trello_desktop_install_dir }}/trello-desktop/tags/{{ trello_ver_number.stdout }}"
+    state: directory
+    mode: 0755
+    owner: "{{ trello_desktop_user }}"
+    group: "{{ trello_desktop_group }}"
+
+- debug:
+    msg: "{{ trello_desktop_url }}/download/{{ trello_ver.stdout }}/Trello-linux-{{ trello_ver_number.stdout }}.zip"
+
+- name: "extract trello-desktop-{{ trello_ver_number.stdout }}"
+  unarchive:
+    src: "{{ trello_desktop_url }}/download/{{ trello_ver.stdout }}/Trello-linux-{{ trello_ver_number.stdout }}.zip"
+    dest: "{{ trello_desktop_install_dir }}/trello-desktop/tags/{{ trello_ver_number.stdout }}"
+    remote_src: yes
+    owner: "{{ trello_desktop_user }}"
+    group: "{{ trello_desktop_group }}"
+
+- name: create symlink to latest trello-desktop
+  file:
+    src: "{{ trello_desktop_install_dir }}/trello-desktop/tags/{{ trello_ver_number.stdout }}"
+    dest: "{{ trello_desktop_install_dir }}/trello-desktop/latest"
+    state: link
+
+- name: create gnome deskop launcher
+  template:
+    src: trello-desktop.j2
+    dest: "{{ trello_desktop_launcher }}"
+    owner: "{{ trello_desktop_user }}"
+    group: "{{ trello_desktop_group }}"
+    mode: 0700

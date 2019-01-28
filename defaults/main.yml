@@ -1,0 +1,10 @@
+---
+# defaults file for swygue.trello
+
+# Install Trello-Desktop
+trello_desktop: true
+trello_desktop_url: https://github.com/danielchatfield/trello-desktop/releases
+trello_desktop_user:
+trello_desktop_group:
+trello_desktop_install_dir:
+trello_desktop_launcher: "/home/{{ trello_desktop_user }}/.local/share/applications/trello.desktop"
